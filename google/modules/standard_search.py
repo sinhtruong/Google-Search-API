@@ -27,6 +27,7 @@ class GoogleResult(object):
         self.page = None  # Results page this one was on
         self.index = None  # What index on this page it was on
         self.number_of_results = None # The total number of results the query returned
+        self.knowledge_result = None # Result of the knowledge-panel scraping
 
     def __repr__(self):
         name = self._limit_str_size(self.name, 55)
@@ -76,6 +77,9 @@ def search(query, pages=1, lang='en', area='com', ncr=False, void=True, time_per
             results_div = soup.find("div", attrs={"id": "resultStats"})
             number_of_results = _get_number_of_results(results_div)
 
+            knowledge_panel = soup.find("div",
+                                        attrs={"class": "knowledge-panel"})
+
             j = 0
             for li in divs:
                 res = GoogleResult()
@@ -90,6 +94,8 @@ def search(query, pages=1, lang='en', area='com', ncr=False, void=True, time_per
                 res.thumb = _get_thumb()
                 res.cached = _get_cached(li)
                 res.number_of_results = number_of_results
+                if knowledge_panel:
+                    res.knowledge_result = _get_knowledge_panel(knowledge_panel)
 
                 if void is True:
                     if res.description is None:
@@ -194,6 +200,38 @@ def _get_description(li):
             return stspan.text.strip()
     else:
         return None
+
+
+def _get_knowledge_panel(panel):
+    """Return the knowledge panel results of a google search."""
+    header = panel.find("div", attrs={"class": "kp-header"})
+    subheader = header.find("div", attrs={"class": "kp-hc"})
+    name, desc = "", ""
+    if subheader:
+        name_divs = subheader.findAll("div", attrs={"class": "kno-ecr-pt"})
+        for x in name_divs:
+            if x.find("span"):
+                name += x.find("span").text + " "
+        desc_divs = subheader.findAll("div", attrs={"class": "vk_gy"})
+        for x in desc_divs:
+            if x.findAll("span"):
+                for span in x.findAll("span"):
+                    desc += span.text + " "
+
+    else:
+        name_desc = header.findAll("div", attrs={"class": "kno-fb-ctx"})
+
+        name_tag = [x for x in name_desc if "kno-ecr-pt" in x.attrs["class"]]
+        for x in name_tag:
+            if x.find("span"):
+                if x.find("span").text:
+                    name += x.find("span").text + " "
+        desc_tag = [x for x in name_desc if "kno-ecr-pt" not in x.attrs["class"]]
+        for x in desc_tag:
+            if x.find("span"):
+                if  x.find("span").text:
+                    desc += x.find("span").text + " "
+    return "{}; {}".format(name.strip(), desc.strip())
 
 
 def _get_thumb():
