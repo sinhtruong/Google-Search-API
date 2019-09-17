@@ -428,13 +428,16 @@ def _get_search_url(query, page=0, per_page=10, lang='en', area='com', ncr=False
     return url
 
 
-def get_html(url):
+def get_html(url, proxy=None):
     ua = UserAgent()
     header = ua.random
 
     try:
         request = urllib.request.Request(url)
         request.add_header("User-Agent", header)
+        if proxy:
+            print("Using proxy:", proxy)
+            request.set_proxy(proxy, 'http')
         html = urllib.request.urlopen(request).read()
         return html
     except urllib.error.HTTPError as e:
