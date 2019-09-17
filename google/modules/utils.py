@@ -45,7 +45,7 @@ def _get_search_url(query, page=0, per_page=10, lang='en', area='com', ncr=False
     # google instant)
 
     params = {
-        'nl': lang,
+        'hl': lang,
         'q': query.encode('utf8'),
         'start': page * per_page,
         'num': per_page
